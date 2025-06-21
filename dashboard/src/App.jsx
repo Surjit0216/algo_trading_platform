@@ -37,12 +37,6 @@ function App() {
   }, []);
 
   const applyFilters = useCallback(() => {
-
-  useEffect(() => {
-    applyFilters();
-  }, [filters, trades]);
-
-  const applyFilters = () => {
     let data = [...trades];
     if (filters.search) {
       data = data.filter(row => JSON.stringify(row).toLowerCase().includes(filters.search.toLowerCase()));
@@ -67,8 +61,6 @@ function App() {
   useEffect(() => {
     applyFilters();
   }, [applyFilters]);
-
-  };
 
   const computeMetrics = (data) => {
     const totalTrades = data.length;
