@@ -11,6 +11,9 @@ This dashboard visualizes trading data stored in a Google Sheet. Data is fetched
 VITE_SHEET_CSV_URL=<your csv url>
 ```
 
+When deploying to Vercel, add this variable to the project **Environment Variables** settings so the dashboard can fetch your sheet data.
+
+
 3. Install dependencies and run the dev server:
 
 ```bash

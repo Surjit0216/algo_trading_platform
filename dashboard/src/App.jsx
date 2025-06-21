@@ -1,4 +1,6 @@
-import { useEffect, useState } from 'react';
+// Main dashboard application
+import { useEffect, useState, useCallback } from 'react';
+
 import './App.css';
 import Summary from './components/Summary';
 import Filters from './components/Filters';
@@ -34,6 +36,8 @@ function App() {
       });
   }, []);
 
+  const applyFilters = useCallback(() => {
+
   useEffect(() => {
     applyFilters();
   }, [filters, trades]);
@@ -58,6 +62,12 @@ function App() {
       data = data.filter(row => parseFloat(row['Profit (INR)'] || 0) <= 0);
     }
     setFiltered(data);
+  }, [filters, trades]);
+
+  useEffect(() => {
+    applyFilters();
+  }, [applyFilters]);
+
   };
 
   const computeMetrics = (data) => {
