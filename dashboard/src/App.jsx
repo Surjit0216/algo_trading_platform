@@ -1,3 +1,4 @@
+// Main dashboard application
 import { useEffect, useState, useCallback } from 'react';
 import './App.css';
 import Summary from './components/Summary';
