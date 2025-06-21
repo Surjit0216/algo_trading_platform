@@ -1,42 +1,97 @@
-import React from 'react';
+import React from "react";
+import { Input } from "@/components/ui/input";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 
 function Filters({ filters, setFilters, options }) {
-  const handleChange = (e) => {
-    setFilters({ ...filters, [e.target.name]: e.target.value });
+  const handleSelectChange = (name, value) => {
+    setFilters((prev) => ({ ...prev, [name]: value === "all" ? "" : value }));
+  };
+
+  const handleInputChange = (e) => {
+    setFilters((prev) => ({ ...prev, [e.target.name]: e.target.value }));
   };
 
   return (
-    <div className="filters">
-      <input
+    <div className="flex flex-wrap items-center gap-4 mb-4">
+      <Input
         type="text"
         name="search"
-        placeholder="Search"
-        value={filters.search || ''}
-        onChange={handleChange}
+        placeholder="Search trades..."
+        className="max-w-xs"
+        value={filters.search || ""}
+        onChange={handleInputChange}
       />
-      <select name="index" value={filters.index || ''} onChange={handleChange}>
-        <option value="">All Indexes</option>
-        {options.indexes.map((i) => (
-          <option key={i} value={i}>{i}</option>
-        ))}
-      </select>
-      <select name="timeframe" value={filters.timeframe || ''} onChange={handleChange}>
-        <option value="">All Timeframes</option>
-        {options.timeframes.map((t) => (
-          <option key={t} value={t}>{t}</option>
-        ))}
-      </select>
-      <select name="signal" value={filters.signal || ''} onChange={handleChange}>
-        <option value="">All Signals</option>
-        {['Buy', 'Sell'].map((s) => (
-          <option key={s} value={s}>{s}</option>
-        ))}
-      </select>
-      <select name="pnl" value={filters.pnl || ''} onChange={handleChange}>
-        <option value="">All</option>
-        <option value="profit">Profit</option>
-        <option value="loss">Loss</option>
-      </select>
+
+      <Select
+        value={filters.index || "all"}
+        onValueChange={(value) => handleSelectChange("index", value)}
+      >
+        <SelectTrigger className="w-[180px]">
+          <SelectValue placeholder="All Indexes" />
+        </SelectTrigger>
+        <SelectContent>
+          <SelectItem value="all">All Indexes</SelectItem>
+          {options.indexes.map((i) => (
+            <SelectItem key={i} value={i}>
+              {i}
+            </SelectItem>
+          ))}
+        </SelectContent>
+      </Select>
+
+      <Select
+        value={filters.timeframe || "all"}
+        onValueChange={(value) => handleSelectChange("timeframe", value)}
+      >
+        <SelectTrigger className="w-[180px]">
+          <SelectValue placeholder="All Timeframes" />
+        </SelectTrigger>
+        <SelectContent>
+          <SelectItem value="all">All Timeframes</SelectItem>
+          {options.timeframes.map((t) => (
+            <SelectItem key={t} value={t}>
+              {t}
+            </SelectItem>
+          ))}
+        </SelectContent>
+      </Select>
+
+      <Select
+        value={filters.signal || "all"}
+        onValueChange={(value) => handleSelectChange("signal", value)}
+      >
+        <SelectTrigger className="w-[180px]">
+          <SelectValue placeholder="All Signals" />
+        </SelectTrigger>
+        <SelectContent>
+          <SelectItem value="all">All Signals</SelectItem>
+          {["Buy", "Sell"].map((s) => (
+            <SelectItem key={s} value={s}>
+              {s}
+            </SelectItem>
+          ))}
+        </SelectContent>
+      </Select>
+
+      <Select
+        value={filters.pnl || "all"}
+        onValueChange={(value) => handleSelectChange("pnl", value)}
+      >
+        <SelectTrigger className="w-[180px]">
+          <SelectValue placeholder="Profit & Loss" />
+        </SelectTrigger>
+        <SelectContent>
+          <SelectItem value="all">All</SelectItem>
+          <SelectItem value="profit">Profit</SelectItem>
+          <SelectItem value="loss">Loss</SelectItem>
+        </SelectContent>
+      </Select>
     </div>
   );
 }
