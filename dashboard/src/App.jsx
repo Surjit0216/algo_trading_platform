@@ -1,5 +1,6 @@
 // Main dashboard application
 import { useEffect, useState, useCallback } from 'react';
+
 import './App.css';
 import Summary from './components/Summary';
 import Filters from './components/Filters';
@@ -36,6 +37,12 @@ function App() {
   }, []);
 
   const applyFilters = useCallback(() => {
+
+  useEffect(() => {
+    applyFilters();
+  }, [filters, trades]);
+
+  const applyFilters = () => {
     let data = [...trades];
     if (filters.search) {
       data = data.filter(row => JSON.stringify(row).toLowerCase().includes(filters.search.toLowerCase()));
@@ -60,6 +67,8 @@ function App() {
   useEffect(() => {
     applyFilters();
   }, [applyFilters]);
+
+  };
 
   const computeMetrics = (data) => {
     const totalTrades = data.length;
