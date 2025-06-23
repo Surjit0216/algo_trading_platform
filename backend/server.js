@@ -1,11 +1,7 @@
-import express from "express";
-import cors from "cors";
-import { google } from "googleapis";
-import path from "path";
-import { fileURLToPath } from "url";
-
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
+const express = require("express");
+const cors = require("cors");
+const { google } = require("googleapis");
+const path = require("path");
 
 const app = express();
 
@@ -155,4 +151,10 @@ app.get("/api/health", (req, res) => {
   });
 });
 
-export default app;
+// Add port configuration
+const port = process.env.PORT || 3000;
+app.listen(port, () => {
+  console.log(`Server running on port ${port}`);
+});
+
+module.exports = app;
