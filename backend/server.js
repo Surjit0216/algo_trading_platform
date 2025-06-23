@@ -165,12 +165,18 @@ app.get("/api/sheet-data", async (req, res) => {
     }
 
     // Check if we have cached data that's still fresh
+    let updated = false;
     if (
       cachedData &&
       lastUpdateTime &&
       Date.now() - lastUpdateTime < MAX_CACHE_AGE
     ) {
-      return res.json(cachedData);
+      return res.json({
+        data: cachedData,
+        dataHash: lastDataHash,
+        updated: false,
+        lastUpdate: new Date(lastUpdateTime).toISOString(),
+      });
     }
 
     const response = await sheets.spreadsheets.values.get({
@@ -196,8 +202,14 @@ app.get("/api/sheet-data", async (req, res) => {
     cachedData = data;
     lastUpdateTime = Date.now();
     lastDataHash = JSON.stringify(data);
+    updated = true;
 
-    res.json(data);
+    res.json({
+      data,
+      dataHash: lastDataHash,
+      updated,
+      lastUpdate: new Date(lastUpdateTime).toISOString(),
+    });
   } catch (error) {
     console.error("Error fetching sheet data:", error);
     res.status(500).json({
