@@ -9,6 +9,8 @@ import Filters from "./components/Filters";
 import TradeTable from "./components/TradeTable";
 import TradeModal from "./components/TradeModal";
 import Charts from "./components/Charts";
+import { PriceService, PriceDisplay } from "./components/PriceService";
+import AnalysisDashboard from "./components/AnalysisDashboard";
 import {
   Card,
   CardHeader,
@@ -332,72 +334,85 @@ function App() {
   }
 
   return (
-    <div className="min-h-screen bg-background">
-      <header className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
-        <div className="container flex items-center h-14">
-          <div className="flex items-center mr-4">
-            <h1 className="text-xl font-bold">📈 Trading Dashboard</h1>
-          </div>
-          <div className="flex items-center justify-end flex-1 space-x-4">
-            <div className="text-sm text-muted-foreground">
-              {usingSampleData
-                ? "📋 Sample Data"
-                : `📅 Last Update: ${formatLastUpdate(lastUpdate)}`}
+    <PriceService>
+      <div className="min-h-screen bg-background">
+        <header className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
+          <div className="container flex items-center h-14">
+            <div className="flex items-center mr-4">
+              <h1 className="text-xl font-bold">📈 Trading Dashboard</h1>
             </div>
-            <div className="flex items-center space-x-2">
-              <Switch
-                id="auto-refresh"
-                checked={autoRefreshEnabled}
-                onCheckedChange={toggleAutoRefresh}
-                disabled={usingSampleData}
-              />
-              <label
-                htmlFor="auto-refresh"
-                className="text-sm text-muted-foreground"
+            <div className="flex items-center justify-end flex-1 space-x-4">
+              <div className="text-sm text-muted-foreground">
+                {usingSampleData
+                  ? "📋 Sample Data"
+                  : `📅 Last Update: ${formatLastUpdate(lastUpdate)}`}
+              </div>
+              <div className="flex items-center space-x-2">
+                <Switch
+                  id="auto-refresh"
+                  checked={autoRefreshEnabled}
+                  onCheckedChange={toggleAutoRefresh}
+                  disabled={usingSampleData}
+                />
+                <label
+                  htmlFor="auto-refresh"
+                  className="text-sm text-muted-foreground"
+                >
+                  Auto-Refresh
+                </label>
+              </div>
+              <Button
+                variant="outline"
+                onClick={handleManualRefresh}
+                disabled={isRefreshing}
               >
-                Auto-Refresh
-              </label>
+                {isRefreshing ? "⏳ Refreshing..." : "🔄 Refresh"}
+              </Button>
+              <Button variant="outline" size="icon" onClick={toggleTheme}>
+                <Sun className="h-[1.2rem] w-[1.2rem] rotate-0 scale-100 transition-all dark:-rotate-90 dark:scale-0" />
+                <Moon className="absolute h-[1.2rem] w-[1.2rem] rotate-90 scale-0 transition-all dark:rotate-0 dark:scale-100" />
+                <span className="sr-only">Toggle theme</span>
+              </Button>
             </div>
-            <Button
-              variant="outline"
-              onClick={handleManualRefresh}
-              disabled={isRefreshing}
-            >
-              {isRefreshing ? "⏳ Refreshing..." : "🔄 Refresh"}
-            </Button>
-            <Button variant="outline" size="icon" onClick={toggleTheme}>
-              <Sun className="h-[1.2rem] w-[1.2rem] rotate-0 scale-100 transition-all dark:-rotate-90 dark:scale-0" />
-              <Moon className="absolute h-[1.2rem] w-[1.2rem] rotate-90 scale-0 transition-all dark:rotate-0 dark:scale-100" />
-              <span className="sr-only">Toggle theme</span>
-            </Button>
           </div>
-        </div>
-      </header>
+        </header>
 
-      <main className="container py-8">
-        <Summary metrics={metrics} />
-        <div className="grid gap-8 mt-8">
-          <Charts data={filtered} theme={theme} />
-          <Card>
-            <CardHeader>
-              <CardTitle>Trade History</CardTitle>
-              <CardDescription>
-                Browse and filter your executed trades.
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <Filters
-                filters={filters}
-                setFilters={setFilters}
-                options={options}
-              />
-              <TradeTable data={filtered} onSelect={setSelected} />
-            </CardContent>
-          </Card>
-        </div>
-        <TradeModal trade={selected} onClose={() => setSelected(null)} />
-      </main>
-    </div>
+        <main className="container py-8">
+          <Summary metrics={metrics} />
+
+          {/* Live Market Prices */}
+          <div className="mt-8">
+            <PriceDisplay />
+          </div>
+
+          <div className="grid gap-8 mt-8">
+            <Charts data={filtered} theme={theme} />
+
+            {/* Portfolio Analysis Dashboard */}
+            <AnalysisDashboard data={filtered} metrics={metrics} />
+
+            <Card>
+              <CardHeader>
+                <CardTitle>Trade History</CardTitle>
+                <CardDescription>
+                  Browse and filter your executed trades with real-time P&L
+                  updates.
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <Filters
+                  filters={filters}
+                  setFilters={setFilters}
+                  options={options}
+                />
+                <TradeTable data={filtered} onSelect={setSelected} />
+              </CardContent>
+            </Card>
+          </div>
+          <TradeModal trade={selected} onClose={() => setSelected(null)} />
+        </main>
+      </div>
+    </PriceService>
   );
 }
 

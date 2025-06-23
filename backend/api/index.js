@@ -32,10 +32,17 @@ const MAX_CACHE_AGE = 60000; // 1 minute
 
 async function initializeGoogleSheets() {
   try {
-    const auth = new google.auth.GoogleAuth({
-      keyFile: path.join(__dirname, "../google-credentials.json"),
+    const authOptions = {
       scopes: SCOPES,
-    });
+    };
+
+    if (process.env.GOOGLE_CREDENTIALS) {
+      authOptions.credentials = JSON.parse(process.env.GOOGLE_CREDENTIALS);
+    } else {
+      authOptions.keyFile = path.join(__dirname, "../google-credentials.json");
+    }
+
+    const auth = new google.auth.GoogleAuth(authOptions);
     sheets = google.sheets({ version: "v4", auth });
     console.log("✅ Google Sheets API initialized successfully");
   } catch (error) {

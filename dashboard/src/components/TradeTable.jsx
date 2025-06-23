@@ -8,8 +8,11 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
+import { usePrices } from "./PriceService";
 
 function TradeTable({ data, onSelect }) {
+  const { getCurrentPrice } = usePrices();
+
   if (!data || !data.length) {
     return (
       <div className="flex items-center justify-center h-48 text-center border-2 border-dashed rounded-lg">
@@ -29,7 +32,9 @@ function TradeTable({ data, onSelect }) {
     "Index",
     "Strike",
     "Timeframe",
-    "Profit (INR)",
+    "Entry Price",
+    "Current P&L",
+    "Total P&L",
     "ROI",
     "Status",
   ];
@@ -51,6 +56,30 @@ function TradeTable({ data, onSelect }) {
     return `${num.toFixed(2)}%`;
   };
 
+  const calculateRealTimePL = (trade) => {
+    const entryPrice = parseFloat(trade["Entry Price"] || 0);
+    const currentPrice = getCurrentPrice(trade.Index);
+    const quantity = parseFloat(trade["Quantity"] || 1);
+    const signal = trade.Signal;
+
+    if (!entryPrice || !currentPrice) return 0;
+
+    let profit = 0;
+    if (signal === "Buy") {
+      profit = (currentPrice - entryPrice) * quantity;
+    } else {
+      profit = (entryPrice - currentPrice) * quantity;
+    }
+
+    return profit;
+  };
+
+  const getPLColor = (profit) => {
+    const num = parseFloat(profit);
+    if (isNaN(num)) return "";
+    return num >= 0 ? "text-green-500" : "text-red-500";
+  };
+
   return (
     <div className="overflow-hidden border rounded-lg">
       <Table>
@@ -62,46 +91,61 @@ function TradeTable({ data, onSelect }) {
           </TableRow>
         </TableHeader>
         <TableBody>
-          {data.map((row, idx) => (
-            <TableRow
-              key={idx}
-              onClick={() => onSelect(row)}
-              className="cursor-pointer"
-            >
-              <TableCell>{row["Date"] || "-"}</TableCell>
-              <TableCell>
-                <Badge
-                  variant={
-                    row["Signal"] === "Buy" ? "secondary" : "destructive"
+          {data.map((row, idx) => {
+            const realTimePL = calculateRealTimePL(row);
+            const totalPL = parseFloat(row["Profit (INR)"] || 0);
+
+            return (
+              <TableRow
+                key={idx}
+                onClick={() => onSelect(row)}
+                className="cursor-pointer hover:bg-muted/50"
+              >
+                <TableCell>{row["Date"] || "-"}</TableCell>
+                <TableCell>
+                  <Badge
+                    variant={
+                      row["Signal"] === "Buy" ? "secondary" : "destructive"
+                    }
+                  >
+                    {row["Signal"]}
+                  </Badge>
+                </TableCell>
+                <TableCell>{row["Index"] || "-"}</TableCell>
+                <TableCell>{row["Strike"] || "-"}</TableCell>
+                <TableCell>{row["Timeframe"] || "-"}</TableCell>
+                <TableCell>
+                  ₹{parseFloat(row["Entry Price"] || 0).toFixed(2)}
+                </TableCell>
+                <TableCell
+                  className={`font-semibold ${getPLColor(realTimePL)}`}
+                >
+                  {formatCurrency(realTimePL)}
+                </TableCell>
+                <TableCell className={`font-semibold ${getPLColor(totalPL)}`}>
+                  {formatCurrency(row["Profit (INR)"])}
+                </TableCell>
+                <TableCell
+                  className={
+                    parseFloat(row["ROI"] || 0) >= 0
+                      ? "text-green-500"
+                      : "text-destructive"
                   }
                 >
-                  {row["Signal"]}
-                </Badge>
-              </TableCell>
-              <TableCell>{row["Index"] || "-"}</TableCell>
-              <TableCell>{row["Strike"] || "-"}</TableCell>
-              <TableCell>{row["Timeframe"] || "-"}</TableCell>
-              <TableCell
-                className={
-                  parseFloat(row["Profit (INR)"] || 0) >= 0
-                    ? "text-green-500"
-                    : "text-destructive"
-                }
-              >
-                {formatCurrency(row["Profit (INR)"])}
-              </TableCell>
-              <TableCell
-                className={
-                  parseFloat(row["ROI"] || 0) >= 0
-                    ? "text-green-500"
-                    : "text-destructive"
-                }
-              >
-                {formatPercentage(row["ROI"])}
-              </TableCell>
-              <TableCell>{row["Status"] || "Active"}</TableCell>
-            </TableRow>
-          ))}
+                  {formatPercentage(row["ROI"])}
+                </TableCell>
+                <TableCell>
+                  <Badge
+                    variant={
+                      row["Status"] === "Closed" ? "secondary" : "default"
+                    }
+                  >
+                    {row["Status"] || "Active"}
+                  </Badge>
+                </TableCell>
+              </TableRow>
+            );
+          })}
         </TableBody>
       </Table>
     </div>
