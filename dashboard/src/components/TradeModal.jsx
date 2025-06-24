@@ -72,63 +72,59 @@ function TradeModal({ trade, onClose }) {
 
           <TabsContent value="details" className="space-y-6">
             <div className="grid gap-8 py-4 md:grid-cols-2">
-              {/* Performance Section */}
+              {/* Basic Info Section */}
               <div className="space-y-2">
-                <h4 className="font-semibold">Performance</h4>
+                <h4 className="font-semibold">Basic Info</h4>
                 <dl>
+                  <DetailItem label="Date" value={trade.Date || "-"} />
+                  <DetailItem label="Signal" value={trade.Signal || "-"} />
+                  <DetailItem label="Index" value={trade.Index || "-"} />
+                  <DetailItem label="Strike" value={trade.Strike || "-"} />
                   <DetailItem
-                    label="Profit (INR)"
-                    value={
-                      <span
-                        className={
-                          parseFloat(trade["Profit (INR)"] || 0) >= 0
-                            ? "text-green-500"
-                            : "text-destructive"
-                        }
-                      >
-                        {formatCurrency(trade["Profit (INR)"])}
-                      </span>
-                    }
+                    label="Timeframe"
+                    value={trade.Timeframe || "-"}
                   />
-                  <DetailItem
-                    label="ROI"
-                    value={
-                      <span
-                        className={
-                          parseFloat(trade.ROI || 0) >= 0
-                            ? "text-green-500"
-                            : "text-destructive"
-                        }
-                      >
-                        {formatPercentage(trade.ROI)}
-                      </span>
-                    }
-                  />
-                  <DetailItem label="Volume" value={trade.Volume || "-"} />
-                  <DetailItem label="Points" value={trade.Points || "-"} />
                   <DetailItem label="Status" value={trade.Status || "-"} />
+                  <DetailItem
+                    label="Tracking ID"
+                    value={trade.TrackingID || "-"}
+                  />
                 </dl>
               </div>
 
-              {/* Timing Section */}
+              {/* Trade Metrics Section */}
               <div className="space-y-2">
-                <h4 className="font-semibold">Timing</h4>
+                <h4 className="font-semibold">Trade Metrics</h4>
                 <dl>
+                  <DetailItem label="Volume" value={trade.Volume || "-"} />
+                  <DetailItem label="Points" value={trade.Points || "-"} />
                   <DetailItem
-                    label="Entry Timestamp"
-                    value={trade["Entry Timestamp"] || "-"}
+                    label="Profit (INR)"
+                    value={formatCurrency(trade["Profit (INR)"])}
                   />
                   <DetailItem
-                    label="Exit Timestamp"
-                    value={trade["Exit Timestamp"] || "-"}
+                    label="% Move Captured"
+                    value={trade["% Move Captured"] || "-"}
+                  />
+                  <DetailItem
+                    label="ROI % on Capital"
+                    value={trade["ROI % on Capital"] || "-"}
+                  />
+                  <DetailItem
+                    label="Final Target Price"
+                    value={trade.FinalTargetPrice || "-"}
+                  />
+                  <DetailItem
+                    label="Target Hit Count"
+                    value={trade["Target Hit Count"] || "-"}
                   />
                   <DetailItem
                     label="Trade Duration"
-                    value={
-                      trade["Trade Duration"]
-                        ? `${parseFloat(trade["Trade Duration"]).toFixed(1)}m`
-                        : "-"
-                    }
+                    value={trade["Trade Duration"] || "-"}
+                  />
+                  <DetailItem
+                    label="Time Taken"
+                    value={trade["TimeTaken"] || "-"}
                   />
                 </dl>
               </div>
@@ -145,9 +141,37 @@ function TradeModal({ trade, onClose }) {
                       <div className="mt-1 text-sm font-semibold">
                         {getTargetStatus(trade[`T${num}Hit`])}
                       </div>
+                      <div className="mt-1 text-xs text-muted-foreground">
+                        {trade[`T${num} Timestamp`]
+                          ? `@ ${trade[`T${num} Timestamp`]}`
+                          : "-"}
+                      </div>
                     </div>
                   ))}
                 </div>
+              </div>
+
+              {/* Timestamps Section */}
+              <div className="space-y-2">
+                <h4 className="font-semibold">Timestamps</h4>
+                <dl>
+                  <DetailItem
+                    label="Entry Timestamp (UTC)"
+                    value={trade["Entry Timestamp (UTC)"] || "-"}
+                  />
+                  <DetailItem
+                    label="Exit Timestamp (UTC)"
+                    value={trade["Exit Timestamp (UTC)"] || "-"}
+                  />
+                  <DetailItem
+                    label="TradingView Time (UTC)"
+                    value={trade["TradingView Time (UTC)"] || "-"}
+                  />
+                  <DetailItem
+                    label="Webhook Time (UTC)"
+                    value={trade["Webhook Time (UTC)"] || "-"}
+                  />
+                </dl>
               </div>
             </div>
           </TabsContent>

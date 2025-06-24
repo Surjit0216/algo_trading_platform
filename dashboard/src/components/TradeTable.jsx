@@ -26,17 +26,17 @@ function TradeTable({ data, onSelect }) {
     );
   }
 
+  // Only show summary columns in the table
   const columns = [
     "Date",
     "Signal",
     "Index",
     "Strike",
-    "Timeframe",
+    "Status",
     "Entry Price",
     "Current P&L",
     "Total P&L",
     "ROI",
-    "Status",
   ];
 
   const formatCurrency = (amount) => {
@@ -57,7 +57,7 @@ function TradeTable({ data, onSelect }) {
   };
 
   const calculateRealTimePL = (trade) => {
-    const entryPrice = parseFloat(trade["Entry Price"] || 0);
+    const entryPrice = parseFloat(trade["Entry Price"] || trade["Strike"] || 0);
     const currentPrice = getCurrentPrice(trade.Index);
     const quantity = parseFloat(trade["Quantity"] || 1);
     const signal = trade.Signal;
@@ -80,6 +80,10 @@ function TradeTable({ data, onSelect }) {
     return num >= 0 ? "text-green-500" : "text-red-500";
   };
 
+  // Helper to show value or fallback
+  const show = (val, fallback = "-") =>
+    val !== undefined && val !== null && val !== "" ? val : fallback;
+
   return (
     <div className="overflow-hidden border rounded-lg">
       <Table>
@@ -94,28 +98,41 @@ function TradeTable({ data, onSelect }) {
           {data.map((row, idx) => {
             const realTimePL = calculateRealTimePL(row);
             const totalPL = parseFloat(row["Profit (INR)"] || 0);
-
             return (
               <TableRow
                 key={idx}
                 onClick={() => onSelect(row)}
                 className="cursor-pointer hover:bg-muted/50"
               >
-                <TableCell>{row["Date"] || "-"}</TableCell>
+                <TableCell>{show(row["Date"])}</TableCell>
                 <TableCell>
                   <Badge
                     variant={
                       row["Signal"] === "Buy" ? "secondary" : "destructive"
                     }
                   >
-                    {row["Signal"]}
+                    {show(row["Signal"])}
                   </Badge>
                 </TableCell>
-                <TableCell>{row["Index"] || "-"}</TableCell>
-                <TableCell>{row["Strike"] || "-"}</TableCell>
-                <TableCell>{row["Timeframe"] || "-"}</TableCell>
+                <TableCell>{show(row["Index"])}</TableCell>
+                <TableCell>{show(row["Strike"])}</TableCell>
                 <TableCell>
-                  ₹{parseFloat(row["Entry Price"] || 0).toFixed(2)}
+                  <Badge
+                    variant={
+                      row["Status"] === "Closed" ||
+                      row["Status"] === "Completed"
+                        ? "secondary"
+                        : "default"
+                    }
+                  >
+                    {show(row["Status"], "Active")}
+                  </Badge>
+                </TableCell>
+                <TableCell>
+                  ₹
+                  {parseFloat(row["Entry Price"] || row["Strike"] || 0).toFixed(
+                    2
+                  )}
                 </TableCell>
                 <TableCell
                   className={`font-semibold ${getPLColor(realTimePL)}`}
@@ -127,21 +144,12 @@ function TradeTable({ data, onSelect }) {
                 </TableCell>
                 <TableCell
                   className={
-                    parseFloat(row["ROI"] || 0) >= 0
+                    parseFloat(row["ROI"] || row["ROI % on Capital"] || 0) >= 0
                       ? "text-green-500"
                       : "text-destructive"
                   }
                 >
-                  {formatPercentage(row["ROI"])}
-                </TableCell>
-                <TableCell>
-                  <Badge
-                    variant={
-                      row["Status"] === "Closed" ? "secondary" : "default"
-                    }
-                  >
-                    {row["Status"] || "Active"}
-                  </Badge>
+                  {formatPercentage(row["ROI"] || row["ROI % on Capital"])}
                 </TableCell>
               </TableRow>
             );

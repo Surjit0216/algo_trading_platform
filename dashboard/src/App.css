@@ -16,18 +16,18 @@ body {
   display: flex;
   flex-direction: column;
   min-height: 100vh;
-  background-color: var(--bg-primary);
+  background-color: var(--background);
   transition: background-color var(--transition-speed) ease;
 }
 
 .header {
   padding: var(--space-md) var(--space-lg);
-  background-color: var(--bg-secondary);
+  background-color: var(--card);
   box-shadow: 0 2px 4px var(--shadow-color);
   display: flex;
   justify-content: space-between;
   align-items: center;
-  border-bottom: 1px solid var(--border-color);
+  border-bottom: 1px solid var(--border);
   position: sticky;
   top: 0;
   z-index: 1000;
@@ -37,7 +37,7 @@ body {
 .header h1 {
   font-size: 1.5rem;
   margin: 0;
-  color: var(--text-primary);
+  color: var(--foreground);
   display: flex;
   align-items: center;
 }
@@ -63,12 +63,12 @@ body {
 .loading-container p,
 .error-container p {
   font-size: 1.2rem;
-  color: var(--text-secondary);
+  color: var(--muted-foreground);
 }
 
 .spinner {
-  border: 4px solid var(--border-color);
-  border-top: 4px solid var(--accent-primary);
+  border: 4px solid var(--border);
+  border-top: 4px solid var(--primary);
   border-radius: 50%;
   width: 40px;
   height: 40px;
@@ -89,7 +89,7 @@ body {
   display: flex;
   align-items: center;
   gap: var(--space-md);
-  color: var(--text-secondary);
+  color: var(--muted-foreground);
   font-size: 0.9rem;
 }
 
@@ -97,23 +97,23 @@ body {
   width: 10px;
   height: 10px;
   border-radius: 50%;
-  background-color: var(--accent-error);
+  background-color: var(--destructive);
   animation: pulse 2s infinite;
 }
 .status-indicator.connected {
-  background-color: var(--accent-secondary);
+  background-color: var(--secondary);
   animation: none;
 }
 
 @keyframes pulse {
   0% {
-    box-shadow: 0 0 0 0 rgba(var(--accent-error), 0.7);
+    box-shadow: 0 0 0 0 rgba(var(--destructive), 0.7);
   }
   70% {
-    box-shadow: 0 0 0 10px rgba(var(--accent-error), 0);
+    box-shadow: 0 0 0 10px rgba(var(--destructive), 0);
   }
   100% {
-    box-shadow: 0 0 0 0 rgba(var(--accent-error), 0);
+    box-shadow: 0 0 0 0 rgba(var(--destructive), 0);
   }
 }
 
@@ -128,8 +128,8 @@ body {
 .summary-card,
 .chart-container,
 .trade-table-container {
-  background-color: var(--bg-glass);
-  border: 1px solid var(--border-color);
+  background-color: var(--card);
+  border: 1px solid var(--border);
   border-radius: var(--border-radius);
   padding: var(--space-lg);
   box-shadow: 0 4px 6px var(--shadow-color);
@@ -154,20 +154,20 @@ body {
 .summary-card h3 {
   margin: 0 0 var(--space-sm) 0;
   font-size: 1rem;
-  color: var(--text-secondary);
+  color: var(--muted-foreground);
 }
 
 .summary-card p {
   margin: 0;
   font-size: 1.75rem;
   font-weight: 700;
-  color: var(--text-primary);
+  color: var(--foreground);
 }
 .summary-card p.positive {
-  color: var(--accent-secondary);
+  color: var(--secondary);
 }
 .summary-card p.negative {
-  color: var(--accent-error);
+  color: var(--destructive);
 }
 
 .charts-grid {
@@ -180,7 +180,7 @@ body {
 .chart-container h3 {
   margin-top: 0;
   margin-bottom: var(--space-md);
-  color: var(--text-primary);
+  color: var(--foreground);
   font-size: 1.2rem;
   display: flex;
   align-items: center;
@@ -203,9 +203,9 @@ body {
 }
 
 .theme-switcher {
-  background: var(--bg-primary);
-  color: var(--text-primary);
-  border: 1px solid var(--border-color);
+  background: var(--background);
+  color: var(--foreground);
+  border: 1px solid var(--border);
   padding: var(--space-sm) var(--space-md);
   border-radius: var(--border-radius);
   cursor: pointer;
@@ -214,8 +214,8 @@ body {
     color var(--transition-speed) ease;
 }
 .theme-switcher:hover {
-  background: var(--accent-primary);
-  color: var(--bg-primary);
+  background: var(--primary);
+  color: var(--background);
 }
 
 .filters-container {
@@ -226,9 +226,9 @@ body {
 
 .filters-container input,
 .filters-container select {
-  background-color: var(--bg-secondary);
-  color: var(--text-primary);
-  border: 1px solid var(--border-color);
+  background-color: var(--card);
+  color: var(--foreground);
+  border: 1px solid var(--border);
   border-radius: var(--border-radius);
   padding: var(--space-sm) var(--space-md);
   font-family: var(--font-family);
@@ -236,7 +236,7 @@ body {
     color var(--transition-speed) ease;
 }
 .filters-container input::placeholder {
-  color: var(--text-secondary);
+  color: var(--muted-foreground);
 }
 
 /* Summary Section */
@@ -649,6 +649,31 @@ body {
 
   .detail-value {
     text-align: left;
+  }
+
+  /* Responsive tweaks for sorting controls */
+  .sorting-controls,
+  .flex.flex-wrap.items-center.gap-2.mb-4 {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.5rem;
+  }
+  .sorting-controls select,
+  .sorting-controls button {
+    width: 100%;
+    margin: 0;
+  }
+
+  /* Ensure trade table is scrollable on mobile */
+  .trade-table-container,
+  .overflow-hidden.border.rounded-lg {
+    overflow-x: auto;
+    padding: 0.5rem;
+  }
+  .trade-table th,
+  .trade-table td {
+    padding: 0.5rem;
+    font-size: 0.85rem;
   }
 }
 

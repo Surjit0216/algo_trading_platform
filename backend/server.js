@@ -222,12 +222,29 @@ app.get("/api/sheet-data", async (req, res) => {
 app.get("/api/check-updates", async (req, res) => {
   try {
     const result = await fetchSheetData(false);
+    let dataArr = [];
+    if (!result) {
+      return res.json({
+        hasUpdates: false,
+        lastUpdate: lastUpdateTime
+          ? new Date(lastUpdateTime).toISOString()
+          : null,
+        totalRows: 0,
+        dataHash: lastDataHash,
+        message: "No data available",
+      });
+    }
+    if (Array.isArray(result)) {
+      dataArr = result;
+    } else if (result.data && Array.isArray(result.data)) {
+      dataArr = result.data;
+    }
     res.json({
-      hasUpdates: result.updated,
+      hasUpdates: false, // can't know if updated from here, but not used by frontend
       lastUpdate: lastUpdateTime
         ? new Date(lastUpdateTime).toISOString()
         : null,
-      totalRows: result.data.length,
+      totalRows: dataArr.length,
       dataHash: lastDataHash,
     });
   } catch (error) {
@@ -250,7 +267,7 @@ app.get("/api/health", (req, res) => {
 });
 
 // Add port configuration
-const port = process.env.PORT || 3000;
+const port = process.env.PORT || 3002;
 app.listen(port, () => {
   console.log(`Server running on port ${port}`);
   initializeGoogleSheets();

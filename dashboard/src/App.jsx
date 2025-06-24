@@ -42,7 +42,9 @@ function App() {
   const [lastUpdate, setLastUpdate] = useState(null);
   const [autoRefreshEnabled, setAutoRefreshEnabled] = useState(true);
   const [isRefreshing, setIsRefreshing] = useState(false);
-  const [theme, setTheme] = useState("dark");
+  const [theme, setTheme] = useState("light");
+  const [sortKey, setSortKey] = useState("Date");
+  const [sortOrder, setSortOrder] = useState("desc");
 
   // Refs for intervals
   const updateCheckIntervalRef = useRef(null);
@@ -308,6 +310,29 @@ function App() {
     return new Date(timestamp).toLocaleString();
   };
 
+  // Sorting logic
+  const getSortedTrades = (data) => {
+    if (!data) return [];
+    const sorted = [...data].sort((a, b) => {
+      let aVal = a[sortKey] || "";
+      let bVal = b[sortKey] || "";
+      // For Date, parse as date
+      if (sortKey === "Date") {
+        aVal = new Date(aVal);
+        bVal = new Date(bVal);
+      } else if (sortKey === "Profit (INR)" || sortKey === "ROI") {
+        aVal = parseFloat(aVal) || 0;
+        bVal = parseFloat(bVal) || 0;
+      }
+      if (aVal < bVal) return sortOrder === "asc" ? -1 : 1;
+      if (aVal > bVal) return sortOrder === "asc" ? 1 : -1;
+      return 0;
+    });
+    return sorted;
+  };
+
+  const sortedFiltered = getSortedTrades(filtered);
+
   if (loading) {
     return (
       <div className="flex items-center justify-center min-h-screen">
@@ -380,6 +405,52 @@ function App() {
         <main className="container py-8">
           <Summary metrics={metrics} />
 
+          {/* Trade History at the top */}
+          <Card>
+            <CardHeader>
+              <CardTitle>Trade History</CardTitle>
+              <CardDescription>
+                Browse and filter your executed trades with real-time P&L
+                updates.
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              {/* Sorting controls */}
+              <div className="flex flex-wrap items-center gap-2 mb-4">
+                <label htmlFor="sortKey" className="text-sm">
+                  Sort by:
+                </label>
+                <select
+                  id="sortKey"
+                  value={sortKey}
+                  onChange={(e) => setSortKey(e.target.value)}
+                  className="border rounded px-2 py-1 text-sm"
+                >
+                  <option value="Date">Date</option>
+                  <option value="Profit (INR)">P&L</option>
+                  <option value="ROI">ROI</option>
+                  <option value="Index">Index</option>
+                  <option value="Signal">Signal</option>
+                </select>
+                <button
+                  className="ml-2 px-2 py-1 border rounded text-sm"
+                  onClick={() =>
+                    setSortOrder(sortOrder === "asc" ? "desc" : "asc")
+                  }
+                  title={sortOrder === "asc" ? "Ascending" : "Descending"}
+                >
+                  {sortOrder === "asc" ? "⬆️" : "⬇️"}
+                </button>
+              </div>
+              <Filters
+                filters={filters}
+                setFilters={setFilters}
+                options={options}
+              />
+              <TradeTable data={sortedFiltered} onSelect={setSelected} />
+            </CardContent>
+          </Card>
+
           {/* Live Market Prices */}
           <div className="mt-8">
             <PriceDisplay />
@@ -387,27 +458,8 @@ function App() {
 
           <div className="grid gap-8 mt-8">
             <Charts data={filtered} theme={theme} />
-
             {/* Portfolio Analysis Dashboard */}
             <AnalysisDashboard data={filtered} metrics={metrics} />
-
-            <Card>
-              <CardHeader>
-                <CardTitle>Trade History</CardTitle>
-                <CardDescription>
-                  Browse and filter your executed trades with real-time P&L
-                  updates.
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <Filters
-                  filters={filters}
-                  setFilters={setFilters}
-                  options={options}
-                />
-                <TradeTable data={filtered} onSelect={setSelected} />
-              </CardContent>
-            </Card>
           </div>
           <TradeModal trade={selected} onClose={() => setSelected(null)} />
         </main>
