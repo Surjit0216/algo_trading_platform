@@ -264,7 +264,12 @@ function App() {
     const winRate = totalTrades ? ((wins / totalTrades) * 100).toFixed(2) : 0;
     const averageROI = totalTrades
       ? (
-          data.reduce((sum, r) => sum + parseFloat(r.ROI || 0), 0) / totalTrades
+          data.reduce(
+            (sum, r) =>
+              sum +
+              parseFloat(r["ROI % on Capital"] || r["ROI"] || 0),
+            0
+          ) / totalTrades
         ).toFixed(2)
       : 0;
     const totalProfit = data
@@ -273,7 +278,9 @@ function App() {
     const avgDuration = totalTrades
       ? (
           data.reduce(
-            (sum, r) => sum + parseFloat(r["Trade Duration"] || 0),
+            (sum, r) =>
+              sum +
+              parseFloat(r["Trade Duration"] || r["TimeTaken"] || 0),
             0
           ) / totalTrades
         ).toFixed(2)

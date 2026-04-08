@@ -89,7 +89,9 @@ function Charts({ data, theme }) {
     const dailyTrades = sortedDates.map((date) => dailyData[date].trades);
 
     // ROI data
-    const roiData = data.map((d) => parseFloat(d.ROI || 0));
+    const roiData = data.map((d) =>
+      parseFloat(d["ROI % on Capital"] || d["ROI"] || 0)
+    );
     const profitData = data.map((d) => parseFloat(d["Profit (INR)"] || 0));
 
     // Cumulative P&L
