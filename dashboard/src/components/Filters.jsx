@@ -87,9 +87,23 @@ function Filters({ filters, setFilters, options }) {
           <SelectValue placeholder="Profit & Loss" />
         </SelectTrigger>
         <SelectContent>
-          <SelectItem value="all">All</SelectItem>
+          <SelectItem value="all">All P&L</SelectItem>
           <SelectItem value="profit">Profit</SelectItem>
           <SelectItem value="loss">Loss</SelectItem>
+        </SelectContent>
+      </Select>
+
+      <Select
+        value={filters.source || "all"}
+        onValueChange={(value) => handleSelectChange("source", value)}
+      >
+        <SelectTrigger className="w-[160px]">
+          <SelectValue placeholder="All Sources" />
+        </SelectTrigger>
+        <SelectContent>
+          <SelectItem value="all">All Sources</SelectItem>
+          <SelectItem value="Sheet1">Sheet1 (Active)</SelectItem>
+          <SelectItem value="Archive">Archive</SelectItem>
         </SelectContent>
       </Select>
     </div>

@@ -113,6 +113,19 @@ function generateDataHash(data) {
   return Buffer.from(hashData).toString("base64");
 }
 
+function parseSheetRows(response, source) {
+  const rows = response.data.values;
+  if (!rows || rows.length === 0) return [];
+  const headers = rows[0];
+  return rows.slice(1).map((row) => {
+    const obj = { _source: source };
+    headers.forEach((header, i) => {
+      obj[header] = row[i] || "";
+    });
+    return obj;
+  });
+}
+
 async function fetchSheetData(forceRefresh = false) {
   try {
     if (!sheets) {
@@ -128,22 +141,23 @@ async function fetchSheetData(forceRefresh = false) {
     ) {
       return cachedData;
     }
-    const response = await sheets.spreadsheets.values.get({
-      spreadsheetId: SHEET_ID,
-      range: "Sheet1!A:AJ",
-    });
-    const rows = response.data.values;
-    if (!rows || rows.length === 0) {
-      throw new Error("No data found in the sheet");
-    }
-    const headers = rows[0];
-    const data = rows.slice(1).map((row) => {
-      const obj = {};
-      headers.forEach((header, i) => {
-        obj[header] = row[i] || "";
-      });
-      return obj;
-    });
+
+    // Fetch Sheet1 and Archive in parallel
+    const [sheet1Response, archiveResponse] = await Promise.all([
+      sheets.spreadsheets.values.get({
+        spreadsheetId: SHEET_ID,
+        range: "Sheet1!A:AJ",
+      }),
+      sheets.spreadsheets.values.get({
+        spreadsheetId: SHEET_ID,
+        range: "Archive!A:AJ",
+      }).catch(() => ({ data: { values: [] } })), // gracefully handle missing Archive sheet
+    ]);
+
+    const sheet1Data = parseSheetRows(sheet1Response, "Sheet1");
+    const archiveData = parseSheetRows(archiveResponse, "Archive");
+    const data = [...archiveData, ...sheet1Data]; // Archive first (older), Sheet1 last (newer)
+
     const newHash = generateDataHash(data);
     const hasChanged = newHash !== lastDataHash;
     if (hasChanged) {
@@ -179,29 +193,30 @@ app.get("/api/sheet-data", async (req, res) => {
       });
     }
 
-    const response = await sheets.spreadsheets.values.get({
-      spreadsheetId: SHEET_ID,
-      range: "Sheet1!A:AJ",
-    });
+    // Fetch Sheet1 and Archive in parallel
+    const [sheet1Response, archiveResponse] = await Promise.all([
+      sheets.spreadsheets.values.get({
+        spreadsheetId: SHEET_ID,
+        range: "Sheet1!A:AJ",
+      }),
+      sheets.spreadsheets.values.get({
+        spreadsheetId: SHEET_ID,
+        range: "Archive!A:AJ",
+      }).catch(() => ({ data: { values: [] } })),
+    ]);
 
-    const rows = response.data.values;
-    if (!rows || rows.length === 0) {
+    const sheet1Data = parseSheetRows(sheet1Response, "Sheet1");
+    const archiveData = parseSheetRows(archiveResponse, "Archive");
+    const data = [...archiveData, ...sheet1Data];
+
+    if (data.length === 0) {
       throw new Error("No data found in the sheet");
     }
-
-    const headers = rows[0];
-    const data = rows.slice(1).map((row) => {
-      const obj = {};
-      headers.forEach((header, i) => {
-        obj[header] = row[i] || "";
-      });
-      return obj;
-    });
 
     // Update cache
     cachedData = data;
     lastUpdateTime = Date.now();
-    lastDataHash = JSON.stringify(data);
+    lastDataHash = generateDataHash(data);
     updated = true;
 
     res.json({

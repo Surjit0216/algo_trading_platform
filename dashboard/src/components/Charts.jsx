@@ -92,6 +92,13 @@ function Charts({ data, theme }) {
     const roiData = data.map((d) => parseFloat(d.ROI || 0));
     const profitData = data.map((d) => parseFloat(d["Profit (INR)"] || 0));
 
+    // Cumulative P&L
+    let cumulative = 0;
+    const cumulativePnL = profitData.map((p) => {
+      cumulative += p;
+      return parseFloat(cumulative.toFixed(2));
+    });
+
     // Target analysis
     const targetHits = {
       T1: data.filter((d) => String(d.T1Hit || "").toLowerCase() === "true")
@@ -133,6 +140,7 @@ function Charts({ data, theme }) {
       dailyTrades,
       roiData,
       profitData,
+      cumulativePnL,
       targetHits,
       targetMisses,
       buyTrades: buyTrades.length,
@@ -215,7 +223,7 @@ function Charts({ data, theme }) {
   };
 
   const roiChart = {
-    labels: data.map((_, index) => `Trade ${index + 1}`),
+    labels: data.map((_, index) => `#${index + 1}`),
     datasets: [
       {
         label: "ROI (%)",
@@ -228,6 +236,24 @@ function Charts({ data, theme }) {
         borderWidth: 2,
         fill: true,
         tension: 0.4,
+        pointRadius: 2,
+      },
+    ],
+  };
+
+  const cumulativeChart = {
+    labels: data.map((_, index) => `#${index + 1}`),
+    datasets: [
+      {
+        label: "Cumulative P&L (₹)",
+        data: chartData.cumulativePnL,
+        borderColor: "#a78bfa",
+        backgroundColor: "rgba(167, 139, 250, 0.15)",
+        borderWidth: 2.5,
+        fill: true,
+        tension: 0.4,
+        pointRadius: 2,
+        pointHoverRadius: 5,
       },
     ],
   };
@@ -291,11 +317,20 @@ function Charts({ data, theme }) {
 
   return (
     <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+      {/* Full-width cumulative P&L — spans all columns */}
+      <div className="md:col-span-2 lg:col-span-3">
+        <ChartContainer title="📈 Cumulative P&L Growth (₹)">
+          <div className="h-56">
+            <Line data={cumulativeChart} options={chartOptions} />
+          </div>
+        </ChartContainer>
+      </div>
+
       <ChartContainer title="📊 Daily Profit/Loss">
         <Bar data={dailyProfitChart} options={chartOptions} />
       </ChartContainer>
 
-      <ChartContainer title="📈 ROI Trend">
+      <ChartContainer title="📉 ROI Per Trade">
         <Line data={roiChart} options={chartOptions} />
       </ChartContainer>
 
@@ -303,7 +338,7 @@ function Charts({ data, theme }) {
         <Bar data={targetChart} options={chartOptions} />
       </ChartContainer>
 
-      <ChartContainer title="📋 Win/Loss Ratio">
+      <ChartContainer title="✅ Win/Loss Ratio">
         <Doughnut data={winLossChart} options={chartOptions} />
       </ChartContainer>
 
@@ -325,6 +360,7 @@ function Charts({ data, theme }) {
                     : "rgba(0, 212, 255, 0.6)",
                 borderColor: theme === "light" ? "#007bff" : "#00d4ff",
                 borderWidth: 2,
+                borderRadius: 4,
               },
             ],
           }}

@@ -26,7 +26,6 @@ const CHECK_UPDATES_URL = `${API_URL}/api/check-updates`;
 const SAMPLE_DATA_URL = "/sample-data.csv";
 
 // Auto-refresh configuration
-const AUTO_REFRESH_INTERVAL = 30000; // 30 seconds
 const UPDATE_CHECK_INTERVAL = 10000; // 10 seconds
 
 function App() {
@@ -241,6 +240,9 @@ function App() {
     } else if (filters.pnl === "loss") {
       data = data.filter((row) => parseFloat(row["Profit (INR)"] || 0) <= 0);
     }
+    if (filters.source) {
+      data = data.filter((row) => row._source === filters.source);
+    }
 
     setFiltered(data);
   }, [filters, trades]);
@@ -361,17 +363,35 @@ function App() {
   return (
     <PriceService>
       <div className="min-h-screen bg-background">
-        <header className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
-          <div className="container flex items-center h-14">
-            <div className="flex items-center mr-4">
-              <h1 className="text-xl font-bold">📈 Trading Dashboard</h1>
-            </div>
-            <div className="flex items-center justify-end flex-1 space-x-4">
-              <div className="text-sm text-muted-foreground">
-                {usingSampleData
-                  ? "📋 Sample Data"
-                  : `📅 Last Update: ${formatLastUpdate(lastUpdate)}`}
+        <header className="sticky top-0 z-50 w-full border-b bg-gradient-to-r from-indigo-950 via-slate-900 to-violet-950 shadow-xl">
+          <div className="container flex items-center h-16 gap-4">
+            {/* Logo / Title */}
+            <div className="flex items-center gap-3 mr-4 shrink-0">
+              <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-gradient-to-br from-violet-500 to-indigo-600 shadow-lg">
+                <span className="text-lg">📈</span>
               </div>
+              <div>
+                <h1 className="text-base font-extrabold tracking-tight text-white leading-none">
+                  Preeto Trading
+                </h1>
+                <p className="text-[10px] font-medium text-indigo-300 leading-none mt-0.5 uppercase tracking-widest">
+                  Live Journal
+                </p>
+              </div>
+            </div>
+
+            {/* Status pill */}
+            <div className="hidden md:flex items-center gap-1.5 rounded-full bg-white/10 px-3 py-1 text-xs text-white/80 border border-white/10">
+              {usingSampleData ? (
+                <><span className="h-2 w-2 rounded-full bg-amber-400 animate-pulse" />Sample Data</>
+              ) : isRefreshing ? (
+                <><span className="h-2 w-2 rounded-full bg-blue-400 animate-pulse" />Refreshing…</>
+              ) : (
+                <><span className="h-2 w-2 rounded-full bg-emerald-400" />Live · {formatLastUpdate(lastUpdate)}</>
+              )}
+            </div>
+
+            <div className="flex items-center justify-end flex-1 space-x-2">
               <div className="flex items-center space-x-2">
                 <Switch
                   id="auto-refresh"
@@ -381,21 +401,28 @@ function App() {
                 />
                 <label
                   htmlFor="auto-refresh"
-                  className="text-sm text-muted-foreground"
+                  className="text-xs text-white/60 hidden sm:block"
                 >
-                  Auto-Refresh
+                  Auto
                 </label>
               </div>
               <Button
                 variant="outline"
+                size="sm"
                 onClick={handleManualRefresh}
                 disabled={isRefreshing}
+                className="border-white/20 bg-white/10 text-white hover:bg-white/20 text-xs"
               >
-                {isRefreshing ? "⏳ Refreshing..." : "🔄 Refresh"}
+                {isRefreshing ? "⏳" : "🔄"} Refresh
               </Button>
-              <Button variant="outline" size="icon" onClick={toggleTheme}>
-                <Sun className="h-[1.2rem] w-[1.2rem] rotate-0 scale-100 transition-all dark:-rotate-90 dark:scale-0" />
-                <Moon className="absolute h-[1.2rem] w-[1.2rem] rotate-90 scale-0 transition-all dark:rotate-0 dark:scale-100" />
+              <Button
+                variant="outline"
+                size="icon"
+                onClick={toggleTheme}
+                className="border-white/20 bg-white/10 text-white hover:bg-white/20 h-8 w-8"
+              >
+                <Sun className="h-4 w-4 rotate-0 scale-100 transition-all dark:-rotate-90 dark:scale-0" />
+                <Moon className="absolute h-4 w-4 rotate-90 scale-0 transition-all dark:rotate-0 dark:scale-100" />
                 <span className="sr-only">Toggle theme</span>
               </Button>
             </div>
@@ -403,7 +430,7 @@ function App() {
         </header>
 
         <main className="container py-8">
-          <Summary metrics={metrics} />
+          <Summary metrics={metrics} trades={trades} />
 
           {/* Trade History at the top */}
           <Card>
