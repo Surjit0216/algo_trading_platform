@@ -11,6 +11,9 @@ import TradeModal from "./components/TradeModal";
 import Charts from "./components/Charts";
 import { PriceService, PriceDisplay } from "./components/PriceService";
 import AnalysisDashboard from "./components/AnalysisDashboard";
+import InvestorSnapshot from "./components/InvestorSnapshot";
+import CapitalSimulator from "./components/CapitalSimulator";
+import RiskDashboard from "./components/RiskDashboard";
 import {
   Card,
   CardHeader,
@@ -18,6 +21,7 @@ import {
   CardDescription,
   CardContent,
 } from "@/components/ui/card";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 // Parse trade date strings (supports dd-mm-yyyy, dd-mm-yy, dd/mm/yyyy, yyyy-mm-dd, with optional time)
 function parseTradeDate(dateStr) {
@@ -481,65 +485,82 @@ function App() {
           </div>
         </header>
 
-        <main className="container py-8">
-          <Summary metrics={metrics} trades={trades} />
+        <main className="container py-6">
+          <Tabs defaultValue="investor">
+            <TabsList className="mb-6 flex flex-wrap h-auto gap-1 bg-muted/50 p-1 rounded-xl">
+              <TabsTrigger value="investor" className="rounded-lg px-4 py-2 text-sm font-semibold">Investor View</TabsTrigger>
+              <TabsTrigger value="simulate" className="rounded-lg px-4 py-2 text-sm font-semibold">Capital Simulator</TabsTrigger>
+              <TabsTrigger value="risk" className="rounded-lg px-4 py-2 text-sm font-semibold">Risk Dashboard</TabsTrigger>
+              <TabsTrigger value="trades" className="rounded-lg px-4 py-2 text-sm font-semibold">Trade History</TabsTrigger>
+              <TabsTrigger value="charts" className="rounded-lg px-4 py-2 text-sm font-semibold">Charts</TabsTrigger>
+            </TabsList>
 
-          {/* Trade History at the top */}
-          <Card>
-            <CardHeader>
-              <CardTitle>Trade History</CardTitle>
-              <CardDescription>
-                Browse and filter your executed trades with real-time P&L
-                updates.
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              {/* Sorting controls */}
-              <div className="flex flex-wrap items-center gap-2 mb-4">
-                <label htmlFor="sortKey" className="text-sm">
-                  Sort by:
-                </label>
-                <select
-                  id="sortKey"
-                  value={sortKey}
-                  onChange={(e) => setSortKey(e.target.value)}
-                  className="border rounded px-2 py-1 text-sm"
-                >
-                  <option value="Signal Date">Signal Date</option>
-                  <option value="Profit (INR)">P&L</option>
-                  <option value="ROI">ROI</option>
-                  <option value="Index">Index</option>
-                  <option value="Signal">Signal</option>
-                </select>
-                <button
-                  className="ml-2 px-2 py-1 border rounded text-sm"
-                  onClick={() =>
-                    setSortOrder(sortOrder === "asc" ? "desc" : "asc")
-                  }
-                  title={sortOrder === "asc" ? "Ascending" : "Descending"}
-                >
-                  {sortOrder === "asc" ? "⬆️" : "⬇️"}
-                </button>
+            {/* TAB 1 — Investor Snapshot */}
+            <TabsContent value="investor">
+              <InvestorSnapshot trades={trades} />
+            </TabsContent>
+
+            {/* TAB 2 — Capital Simulator */}
+            <TabsContent value="simulate">
+              <CapitalSimulator trades={trades} />
+            </TabsContent>
+
+            {/* TAB 3 — Risk Dashboard */}
+            <TabsContent value="risk">
+              <RiskDashboard trades={trades} />
+            </TabsContent>
+
+            {/* TAB 4 — Trade History */}
+            <TabsContent value="trades">
+              <Summary metrics={metrics} trades={filtered} />
+              <Card>
+                <CardHeader>
+                  <CardTitle>Trade History</CardTitle>
+                  <CardDescription>Browse and filter your executed trades.</CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <div className="flex flex-wrap items-center gap-2 mb-4">
+                    <label htmlFor="sortKey" className="text-sm">Sort by:</label>
+                    <select
+                      id="sortKey"
+                      value={sortKey}
+                      onChange={(e) => setSortKey(e.target.value)}
+                      className="border rounded px-2 py-1 text-sm"
+                    >
+                      <option value="Signal Date">Signal Date</option>
+                      <option value="Profit (INR)">P&L</option>
+                      <option value="ROI">ROI</option>
+                      <option value="Index">Index</option>
+                      <option value="Signal">Signal</option>
+                    </select>
+                    <button
+                      className="ml-2 px-2 py-1 border rounded text-sm"
+                      onClick={() => setSortOrder(sortOrder === "asc" ? "desc" : "asc")}
+                    >
+                      {sortOrder === "asc" ? "⬆️" : "⬇️"}
+                    </button>
+                  </div>
+                  <Filters filters={filters} setFilters={setFilters} options={options} />
+                  <TradeTable data={sortedFiltered} onSelect={setSelected} />
+                </CardContent>
+              </Card>
+            </TabsContent>
+
+            {/* TAB 5 — Charts */}
+            <TabsContent value="charts">
+              <div className="mb-4">
+                <Filters filters={filters} setFilters={setFilters} options={options} />
               </div>
-              <Filters
-                filters={filters}
-                setFilters={setFilters}
-                options={options}
-              />
-              <TradeTable data={sortedFiltered} onSelect={setSelected} />
-            </CardContent>
-          </Card>
+              <div className="mt-4">
+                <PriceDisplay />
+              </div>
+              <div className="grid gap-8 mt-6">
+                <Charts data={filtered} theme={theme} />
+                <AnalysisDashboard data={filtered} metrics={metrics} />
+              </div>
+            </TabsContent>
+          </Tabs>
 
-          {/* Live Market Prices */}
-          <div className="mt-8">
-            <PriceDisplay />
-          </div>
-
-          <div className="grid gap-8 mt-8">
-            <Charts data={filtered} theme={theme} />
-            {/* Portfolio Analysis Dashboard */}
-            <AnalysisDashboard data={filtered} metrics={metrics} />
-          </div>
           <TradeModal trade={selected} onClose={() => setSelected(null)} />
         </main>
       </div>
