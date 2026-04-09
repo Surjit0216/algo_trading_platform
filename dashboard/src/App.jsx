@@ -258,6 +258,59 @@ function App() {
     loadDataRef.current();
   }, []);
 
+  const computeMetrics = (data) => {
+    if (!data || data.length === 0) {
+      setMetrics(null);
+      return;
+    }
+
+    const totalTrades = data.length;
+    const wins = data.filter(
+      (row) => parseFloat(row["Profit (INR)"] || 0) > 0
+    ).length;
+    const winRate = totalTrades ? ((wins / totalTrades) * 100).toFixed(2) : 0;
+    const averageROI = totalTrades
+      ? (
+          data.reduce(
+            (sum, r) =>
+              sum + parseFloat(r["ROI % on Capital"] || r["ROI"] || 0),
+            0
+          ) / totalTrades
+        ).toFixed(2)
+      : 0;
+    const totalProfit = data
+      .reduce((sum, r) => sum + parseFloat(r["Profit (INR)"] || 0), 0)
+      .toFixed(2);
+    const avgDuration = totalTrades
+      ? (
+          data.reduce(
+            (sum, r) =>
+              sum + parseFloat(r["Trade Duration"] || r["TimeTaken"] || 0),
+            0
+          ) / totalTrades
+        ).toFixed(2)
+      : 0;
+
+    const targetSuccess = {};
+    ["T1Hit", "T2Hit", "T3Hit", "T4Hit", "T5Hit", "T6Hit"].forEach((t) => {
+      const hit = data.filter(
+        (r) => String(r[t] || "").toLowerCase() === "true"
+      ).length;
+      targetSuccess[t] = totalTrades
+        ? ((hit / totalTrades) * 100).toFixed(2)
+        : 0;
+    });
+
+    setMetrics({
+      totalTrades,
+      winRate,
+      averageROI,
+      totalProfit,
+      averageDuration: avgDuration,
+      targetSuccess,
+    });
+  };
+
   const applyFilters = useCallback(() => {
     let data = [...trades];
 
@@ -291,66 +344,12 @@ function App() {
     }
 
     setFiltered(data);
+    computeMetrics(data);
   }, [filters, trades]);
 
   useEffect(() => {
     applyFilters();
   }, [applyFilters]);
-
-  const computeMetrics = (data) => {
-    if (!data || data.length === 0) {
-      setMetrics(null);
-      return;
-    }
-
-    const totalTrades = data.length;
-    const wins = data.filter(
-      (row) => parseFloat(row["Profit (INR)"] || 0) > 0
-    ).length;
-    const winRate = totalTrades ? ((wins / totalTrades) * 100).toFixed(2) : 0;
-    const averageROI = totalTrades
-      ? (
-          data.reduce(
-            (sum, r) =>
-              sum +
-              parseFloat(r["ROI % on Capital"] || r["ROI"] || 0),
-            0
-          ) / totalTrades
-        ).toFixed(2)
-      : 0;
-    const totalProfit = data
-      .reduce((sum, r) => sum + parseFloat(r["Profit (INR)"] || 0), 0)
-      .toFixed(2);
-    const avgDuration = totalTrades
-      ? (
-          data.reduce(
-            (sum, r) =>
-              sum +
-              parseFloat(r["Trade Duration"] || r["TimeTaken"] || 0),
-            0
-          ) / totalTrades
-        ).toFixed(2)
-      : 0;
-
-    const targetSuccess = {};
-    ["T1Hit", "T2Hit", "T3Hit", "T4Hit", "T5Hit", "T6Hit"].forEach((t) => {
-      const hit = data.filter(
-        (r) => String(r[t] || "").toLowerCase() === "true"
-      ).length;
-      targetSuccess[t] = totalTrades
-        ? ((hit / totalTrades) * 100).toFixed(2)
-        : 0;
-    });
-
-    setMetrics({
-      totalTrades,
-      winRate,
-      averageROI,
-      totalProfit,
-      averageDuration: avgDuration,
-      targetSuccess,
-    });
-  };
 
   const handleManualRefresh = () => {
     loadDataRef.current(true);
