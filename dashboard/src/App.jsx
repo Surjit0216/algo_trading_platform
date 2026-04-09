@@ -19,20 +19,29 @@ import {
   CardContent,
 } from "@/components/ui/card";
 
-// Parse trade date strings (supports dd-mm-yyyy, dd/mm/yyyy, yyyy-mm-dd)
+// Parse trade date strings (supports dd-mm-yyyy, dd-mm-yy, dd/mm/yyyy, yyyy-mm-dd, with optional time)
 function parseTradeDate(dateStr) {
   if (!dateStr) return null;
-  const s = String(dateStr).trim();
+  // Strip time portion e.g. "11-03-2026 9:25 AM" → "11-03-2026"
+  const s = String(dateStr).trim().split(/\s/)[0];
   const parts = s.split(/[-\/]/);
   if (parts.length !== 3) return null;
   let day, month, year;
   if (parts[0].length === 4) {
     [year, month, day] = parts; // yyyy-mm-dd
   } else {
-    [day, month, year] = parts; // dd-mm-yyyy
+    [day, month, year] = parts; // dd-mm-yyyy or dd-mm-yy
   }
-  const d = new Date(Number(year), Number(month) - 1, Number(day));
+  let y = Number(year);
+  if (y < 100) y += 2000; // fix 2-digit years (e.g. "26" → 2026)
+  const d = new Date(y, Number(month) - 1, Number(day));
   return isNaN(d.getTime()) ? null : d;
+}
+
+// Strip currency formatting from Google Sheets (₹25,268 → 25268)
+function cleanNum(val) {
+  if (val === undefined || val === null || val === "") return "";
+  return String(val).replace(/[₹,%\s]/g, "").replace(/,/g, "");
 }
 
 function getMonthLabel(dateStr) {
@@ -112,11 +121,16 @@ function App() {
           throw new Error(result.error);
         }
 
-        const clean = result.data.filter((row) =>
-          Object.values(row).some(
-            (v) => v !== "" && v !== null && v !== undefined
+        const CURRENCY_FIELDS = ["Profit (INR)", "ROI % on Capital", "ROI", "% Move Captured"];
+        const clean = result.data
+          .filter((row) =>
+            Object.values(row).some((v) => v !== "" && v !== null && v !== undefined)
           )
-        );
+          .map((row) => {
+            const r = { ...row };
+            CURRENCY_FIELDS.forEach((f) => { if (r[f] !== undefined) r[f] = cleanNum(r[f]); });
+            return r;
+          });
 
         // Update last data hash for change detection
         lastDataHashRef.current = result.dataHash || null;

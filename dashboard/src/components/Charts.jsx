@@ -41,10 +41,10 @@ function ChartContainer({ title, children }) {
   );
 }
 
-// Parse trade date strings (supports dd-mm-yyyy, dd/mm/yyyy, yyyy-mm-dd)
+// Parse trade date strings (supports dd-mm-yyyy, dd-mm-yy, dd/mm/yyyy, yyyy-mm-dd, with optional time)
 function parseTradeDate(dateStr) {
   if (!dateStr) return null;
-  const s = String(dateStr).trim();
+  const s = String(dateStr).trim().split(/\s/)[0];
   const parts = s.split(/[-\/]/);
   if (parts.length !== 3) return null;
   let day, month, year;
@@ -53,7 +53,9 @@ function parseTradeDate(dateStr) {
   } else {
     [day, month, year] = parts;
   }
-  const d = new Date(Number(year), Number(month) - 1, Number(day));
+  let y = Number(year);
+  if (y < 100) y += 2000;
+  const d = new Date(y, Number(month) - 1, Number(day));
   return isNaN(d.getTime()) ? null : d;
 }
 
