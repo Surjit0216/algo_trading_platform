@@ -8,11 +8,8 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
-import { usePrices } from "./PriceService";
 
 function TradeTable({ data, onSelect }) {
-  const { getCurrentPrice } = usePrices();
-
   if (!data || !data.length) {
     return (
       <div className="flex items-center justify-center h-48 text-center border-2 border-dashed rounded-lg">
@@ -28,13 +25,12 @@ function TradeTable({ data, onSelect }) {
 
   // Only show summary columns in the table
   const columns = [
-    "Date",
+    "Signal Date",
     "Signal",
     "Index",
     "Strike",
     "Status",
     "Entry Price",
-    "Current P&L",
     "Total P&L",
     "ROI",
   ];
@@ -54,24 +50,6 @@ function TradeTable({ data, onSelect }) {
     const num = parseFloat(value);
     if (isNaN(num)) return "-";
     return `${num.toFixed(2)}%`;
-  };
-
-  const calculateRealTimePL = (trade) => {
-    const entryPrice = parseFloat(trade["Entry Price"] || trade["Strike"] || 0);
-    const currentPrice = getCurrentPrice(trade.Index);
-    const quantity = parseFloat(trade["Quantity"] || 1);
-    const signal = trade.Signal;
-
-    if (!entryPrice || !currentPrice) return 0;
-
-    let profit = 0;
-    if (signal === "Buy") {
-      profit = (currentPrice - entryPrice) * quantity;
-    } else {
-      profit = (entryPrice - currentPrice) * quantity;
-    }
-
-    return profit;
   };
 
   const getPLColor = (profit) => {
@@ -96,7 +74,6 @@ function TradeTable({ data, onSelect }) {
         </TableHeader>
         <TableBody>
           {data.map((row, idx) => {
-            const realTimePL = calculateRealTimePL(row);
             const totalPL = parseFloat(row["Profit (INR)"] || 0);
             return (
               <TableRow
@@ -104,7 +81,7 @@ function TradeTable({ data, onSelect }) {
                 onClick={() => onSelect(row)}
                 className="cursor-pointer hover:bg-muted/50"
               >
-                <TableCell>{show(row["Date"])}</TableCell>
+                <TableCell>{show(row["Signal Date"] || row["Date"])}</TableCell>
                 <TableCell>
                   <Badge
                     variant={
@@ -130,14 +107,7 @@ function TradeTable({ data, onSelect }) {
                 </TableCell>
                 <TableCell>
                   ₹
-                  {parseFloat(row["Entry Price"] || row["Strike"] || 0).toFixed(
-                    2
-                  )}
-                </TableCell>
-                <TableCell
-                  className={`font-semibold ${getPLColor(realTimePL)}`}
-                >
-                  {formatCurrency(realTimePL)}
+                  {parseFloat(row["Entry Premium"] || row["Entry Price"] || row["Strike"] || 0).toFixed(2)}
                 </TableCell>
                 <TableCell className={`font-semibold ${getPLColor(totalPL)}`}>
                   {formatCurrency(row["Profit (INR)"])}

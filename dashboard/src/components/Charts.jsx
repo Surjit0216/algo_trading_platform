@@ -41,16 +41,36 @@ function ChartContainer({ title, children }) {
   );
 }
 
+// Parse trade date strings (supports dd-mm-yyyy, dd/mm/yyyy, yyyy-mm-dd)
+function parseTradeDate(dateStr) {
+  if (!dateStr) return null;
+  const s = String(dateStr).trim();
+  const parts = s.split(/[-\/]/);
+  if (parts.length !== 3) return null;
+  let day, month, year;
+  if (parts[0].length === 4) {
+    [year, month, day] = parts;
+  } else {
+    [day, month, year] = parts;
+  }
+  const d = new Date(Number(year), Number(month) - 1, Number(day));
+  return isNaN(d.getTime()) ? null : d;
+}
+
+function getSignalDate(trade) {
+  return trade["Signal Date"] || trade.Date || trade.date || "";
+}
+
 function Charts({ data, theme }) {
   if (!data || !data.length) return null;
 
   const chartData = useMemo(() => {
     // Group data by date for daily analysis
     const dailyData = data.reduce((acc, trade) => {
-      const fullDate = trade.Date || trade.date || "Unknown";
-      if (fullDate === "Unknown") return acc;
+      const fullDate = getSignalDate(trade);
+      if (!fullDate) return acc;
 
-      const datePart = fullDate.split(" ")[0]; // "15-06-2025"
+      const datePart = fullDate.split(" ")[0];
       if (!datePart) return acc;
 
       if (!acc[datePart]) {
@@ -72,17 +92,13 @@ function Charts({ data, theme }) {
     }, {});
 
     const sortedDates = Object.keys(dailyData).sort((a, b) => {
-      const [dayA, monthA, yearA] = a.split("-");
-      const [dayB, monthB, yearB] = b.split("-");
-      return (
-        new Date(`${yearA}-${monthA}-${dayA}`) -
-        new Date(`${yearB}-${monthB}-${dayB}`)
-      );
+      return (parseTradeDate(a) || 0) - (parseTradeDate(b) || 0);
     });
 
     const formattedDates = sortedDates.map((date) => {
-      const [day, month] = date.split("-");
-      return `${day}/${month}`;
+      const d = parseTradeDate(date);
+      if (!d) return date;
+      return `${String(d.getDate()).padStart(2, "0")}/${String(d.getMonth() + 1).padStart(2, "0")}`;
     });
 
     const dailyProfit = sortedDates.map((date) => dailyData[date].profit);
@@ -136,6 +152,39 @@ function Charts({ data, theme }) {
       (d) => parseFloat(d["Profit (INR)"] || 0) > 0
     ).length;
 
+    // Month-on-Month aggregation
+    const momMap = {};
+    data.forEach((trade) => {
+      const d = parseTradeDate(getSignalDate(trade));
+      if (!d) return;
+      const label = d.toLocaleDateString("en-US", { month: "long", year: "numeric" });
+      if (!momMap[label]) momMap[label] = { profit: 0, trades: 0, date: d };
+      const profit = parseFloat(trade["Profit (INR)"] || 0);
+      if (!isNaN(profit)) momMap[label].profit += profit;
+      momMap[label].trades += 1;
+    });
+    const momLabels = Object.keys(momMap).sort((a, b) => momMap[a].date - momMap[b].date);
+    const momProfit = momLabels.map((l) => parseFloat(momMap[l].profit.toFixed(2)));
+
+    // Week-on-Week aggregation (week starts Monday)
+    const wowMap = {};
+    data.forEach((trade) => {
+      const d = parseTradeDate(getSignalDate(trade));
+      if (!d) return;
+      const day = d.getDay();
+      const diff = d.getDate() - day + (day === 0 ? -6 : 1);
+      const monday = new Date(d.getFullYear(), d.getMonth(), diff);
+      const label = monday.toLocaleDateString("en-IN", { day: "2-digit", month: "short" });
+      const key = monday.getTime();
+      if (!wowMap[key]) wowMap[key] = { label, profit: 0, trades: 0, ts: monday };
+      const profit = parseFloat(trade["Profit (INR)"] || 0);
+      if (!isNaN(profit)) wowMap[key].profit += profit;
+      wowMap[key].trades += 1;
+    });
+    const wowSorted = Object.values(wowMap).sort((a, b) => a.ts - b.ts);
+    const wowLabels = wowSorted.map((w) => w.label);
+    const wowProfit = wowSorted.map((w) => parseFloat(w.profit.toFixed(2)));
+
     return {
       dates: formattedDates,
       dailyProfit,
@@ -149,6 +198,10 @@ function Charts({ data, theme }) {
       sellTrades: sellTrades.length,
       buyWins,
       sellWins,
+      momLabels,
+      momProfit,
+      wowLabels,
+      wowProfit,
     };
   }, [data]);
 
@@ -317,8 +370,62 @@ function Charts({ data, theme }) {
     ],
   };
 
+  const momChart = {
+    labels: chartData.momLabels,
+    datasets: [
+      {
+        label: "P&L (₹)",
+        data: chartData.momProfit,
+        backgroundColor: chartData.momProfit.map((p) =>
+          p >= 0 ? "rgba(76, 175, 80, 0.7)" : "rgba(255, 107, 107, 0.7)"
+        ),
+        borderColor: chartData.momProfit.map((p) =>
+          p >= 0 ? "#4caf50" : "#ff6b6b"
+        ),
+        borderWidth: 2,
+        borderRadius: 6,
+      },
+    ],
+  };
+
+  const wowChart = {
+    labels: chartData.wowLabels,
+    datasets: [
+      {
+        label: "P&L (₹)",
+        data: chartData.wowProfit,
+        backgroundColor: chartData.wowProfit.map((p) =>
+          p >= 0 ? "rgba(99, 179, 237, 0.7)" : "rgba(255, 107, 107, 0.7)"
+        ),
+        borderColor: chartData.wowProfit.map((p) =>
+          p >= 0 ? "#63b3ed" : "#ff6b6b"
+        ),
+        borderWidth: 2,
+        borderRadius: 4,
+      },
+    ],
+  };
+
   return (
     <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+      {/* Month-on-Month P&L — full width */}
+      <div className="md:col-span-2 lg:col-span-3">
+        <ChartContainer title="📅 Month-on-Month P&L (₹)">
+          <div className="h-56">
+            <Bar data={momChart} options={chartOptions} />
+          </div>
+        </ChartContainer>
+      </div>
+
+      {/* Week-on-Week P&L — full width */}
+      <div className="md:col-span-2 lg:col-span-3">
+        <ChartContainer title="📆 Week-on-Week P&L (₹)">
+          <div className="h-56">
+            <Bar data={wowChart} options={chartOptions} />
+          </div>
+        </ChartContainer>
+      </div>
+
       {/* Full-width cumulative P&L — spans all columns */}
       <div className="md:col-span-2 lg:col-span-3">
         <ChartContainer title="📈 Cumulative P&L Growth (₹)">

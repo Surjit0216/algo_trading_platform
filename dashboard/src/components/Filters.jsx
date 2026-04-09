@@ -106,6 +106,23 @@ function Filters({ filters, setFilters, options }) {
           <SelectItem value="Archive">Archive</SelectItem>
         </SelectContent>
       </Select>
+
+      <Select
+        value={filters.month || "all"}
+        onValueChange={(value) => handleSelectChange("month", value)}
+      >
+        <SelectTrigger className="w-[180px]">
+          <SelectValue placeholder="All Months" />
+        </SelectTrigger>
+        <SelectContent>
+          <SelectItem value="all">All Months</SelectItem>
+          {(options.months || []).map((m) => (
+            <SelectItem key={m} value={m}>
+              {m}
+            </SelectItem>
+          ))}
+        </SelectContent>
+      </Select>
     </div>
   );
 }

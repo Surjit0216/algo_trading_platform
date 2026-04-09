@@ -19,6 +19,28 @@ import {
   CardContent,
 } from "@/components/ui/card";
 
+// Parse trade date strings (supports dd-mm-yyyy, dd/mm/yyyy, yyyy-mm-dd)
+function parseTradeDate(dateStr) {
+  if (!dateStr) return null;
+  const s = String(dateStr).trim();
+  const parts = s.split(/[-\/]/);
+  if (parts.length !== 3) return null;
+  let day, month, year;
+  if (parts[0].length === 4) {
+    [year, month, day] = parts; // yyyy-mm-dd
+  } else {
+    [day, month, year] = parts; // dd-mm-yyyy
+  }
+  const d = new Date(Number(year), Number(month) - 1, Number(day));
+  return isNaN(d.getTime()) ? null : d;
+}
+
+function getMonthLabel(dateStr) {
+  const d = parseTradeDate(dateStr);
+  if (!d) return null;
+  return d.toLocaleDateString("en-US", { month: "long", year: "numeric" });
+}
+
 // API configuration
 const API_URL = import.meta.env.VITE_API_URL || "http://localhost:3001";
 const SHEET_DATA_URL = `${API_URL}/api/sheet-data`;
@@ -33,7 +55,7 @@ function App() {
   const [filtered, setFiltered] = useState([]);
   const [metrics, setMetrics] = useState(null);
   const [filters, setFilters] = useState({});
-  const [options, setOptions] = useState({ indexes: [], timeframes: [] });
+  const [options, setOptions] = useState({ indexes: [], timeframes: [], months: [] });
   const [selected, setSelected] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -42,7 +64,7 @@ function App() {
   const [autoRefreshEnabled, setAutoRefreshEnabled] = useState(true);
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [theme, setTheme] = useState("light");
-  const [sortKey, setSortKey] = useState("Date");
+  const [sortKey, setSortKey] = useState("Signal Date");
   const [sortOrder, setSortOrder] = useState("desc");
 
   // Refs for intervals
@@ -113,6 +135,9 @@ function App() {
         setTrades(clean);
         setFiltered(clean);
         computeMetrics(clean);
+        const months = Array.from(
+          new Set(clean.map((r) => getMonthLabel(r["Signal Date"] || r["Date"])).filter(Boolean))
+        ).sort((a, b) => new Date(b) - new Date(a));
         setOptions({
           indexes: Array.from(
             new Set(clean.map((r) => r.Index).filter(Boolean))
@@ -120,6 +145,7 @@ function App() {
           timeframes: Array.from(
             new Set(clean.map((r) => r.Timeframe).filter(Boolean))
           ).sort(),
+          months,
         });
       } catch (err) {
         console.warn("Error loading from API:", err.message);
@@ -243,6 +269,12 @@ function App() {
     if (filters.source) {
       data = data.filter((row) => row._source === filters.source);
     }
+    if (filters.month) {
+      data = data.filter((row) => {
+        const label = getMonthLabel(row["Signal Date"] || row["Date"]);
+        return label === filters.month;
+      });
+    }
 
     setFiltered(data);
   }, [filters, trades]);
@@ -325,10 +357,10 @@ function App() {
     const sorted = [...data].sort((a, b) => {
       let aVal = a[sortKey] || "";
       let bVal = b[sortKey] || "";
-      // For Date, parse as date
-      if (sortKey === "Date") {
-        aVal = new Date(aVal);
-        bVal = new Date(bVal);
+      // For date fields, parse using our helper
+      if (sortKey === "Signal Date" || sortKey === "Date") {
+        aVal = parseTradeDate(a["Signal Date"] || a["Date"]) || new Date(0);
+        bVal = parseTradeDate(b["Signal Date"] || b["Date"]) || new Date(0);
       } else if (sortKey === "Profit (INR)" || sortKey === "ROI") {
         aVal = parseFloat(aVal) || 0;
         bVal = parseFloat(bVal) || 0;
@@ -460,7 +492,7 @@ function App() {
                   onChange={(e) => setSortKey(e.target.value)}
                   className="border rounded px-2 py-1 text-sm"
                 >
-                  <option value="Date">Date</option>
+                  <option value="Signal Date">Signal Date</option>
                   <option value="Profit (INR)">P&L</option>
                   <option value="ROI">ROI</option>
                   <option value="Index">Index</option>
