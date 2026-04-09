@@ -6,6 +6,7 @@ const app = express();
 
 const allowedOrigins = [
   /^http:\/\/localhost:\d+$/,
+  /^https:\/\/algo-trading-platform.*\.vercel\.app$/,
   "https://algo-trading-platform-lyart.vercel.app",
   "https://algo-trading-platform-bay.vercel.app",
   "https://algo-trading-platform-3ouq.vercel.app",
