@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from "react";
+import React, { useState, useMemo, useRef } from "react";
 import { Line } from "react-chartjs-2";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 
@@ -47,10 +47,36 @@ function simulate(ratePercent, capital, months, compound) {
   return rows;
 }
 
+const PRESETS = [
+  { v: 50000,   l: "₹50K" },
+  { v: 100000,  l: "₹1L"  },
+  { v: 500000,  l: "₹5L"  },
+  { v: 1000000, l: "₹10L" },
+  { v: 2000000, l: "₹20L" },
+];
+
 export default function CapitalSimulator({ trades }) {
   const [capital, setCapital] = useState(1000000);
   const [horizon, setHorizon] = useState(6);
   const [reinvest, setReinvest] = useState(false);
+  const [showCustom, setShowCustom] = useState(false);
+  const [customInput, setCustomInput] = useState("");
+  const [customActive, setCustomActive] = useState(false);
+  const inputRef = useRef(null);
+
+  const handleCustomApply = () => {
+    const val = parseInt(customInput.replace(/[^0-9]/g, ""), 10);
+    if (!val || val < 5000 || val > 50000000) return;
+    setCapital(val);
+    setCustomActive(true);
+    setShowCustom(false);
+  };
+
+  const handlePresetClick = (v) => {
+    setCapital(v);
+    setCustomActive(false);
+    setShowCustom(false);
+  };
 
   const rates = useMemo(() => {
     const BASE = 1000000;
@@ -67,44 +93,82 @@ export default function CapitalSimulator({ trades }) {
       realistic: percentile(roiPcts, 50),
       optimistic: percentile(roiPcts, 75),
       count: roiPcts.length,
-      all: roiPcts,
     };
   }, [trades]);
 
   const conservative = simulate(rates.conservative, capital, horizon, reinvest);
-  const realistic = simulate(rates.realistic, capital, horizon, reinvest);
-  const optimistic = simulate(rates.optimistic, capital, horizon, reinvest);
+  const realistic    = simulate(rates.realistic,    capital, horizon, reinvest);
+  const optimistic   = simulate(rates.optimistic,   capital, horizon, reinvest);
 
   const labels = Array.from({ length: horizon }, (_, i) => `M${i + 1}`);
 
   const chartData = {
     labels,
     datasets: [
-      { label: "Optimistic", data: optimistic.map(r => r.ending), borderColor: "#10b981", backgroundColor: "rgba(16,185,129,0.08)", borderWidth: 2.5, fill: false, tension: 0.4, pointRadius: 3 },
-      { label: "Realistic", data: realistic.map(r => r.ending), borderColor: "#6366f1", backgroundColor: "rgba(99,102,241,0.08)", borderWidth: 3, fill: false, tension: 0.4, pointRadius: 3 },
-      { label: "Conservative", data: conservative.map(r => r.ending), borderColor: "#f59e0b", backgroundColor: "rgba(245,158,11,0.08)", borderWidth: 2.5, fill: false, tension: 0.4, pointRadius: 3 },
+      { label: "Optimistic",   data: optimistic.map(r => r.ending),   borderColor: "#10b981", backgroundColor: "rgba(16,185,129,0.08)",  borderWidth: 2.5, fill: false, tension: 0.4, pointRadius: 3 },
+      { label: "Realistic",    data: realistic.map(r => r.ending),    borderColor: "#6366f1", backgroundColor: "rgba(99,102,241,0.08)",   borderWidth: 3,   fill: false, tension: 0.4, pointRadius: 3 },
+      { label: "Conservative", data: conservative.map(r => r.ending), borderColor: "#f59e0b", backgroundColor: "rgba(245,158,11,0.08)",   borderWidth: 2.5, fill: false, tension: 0.4, pointRadius: 3 },
     ],
   };
 
-  const btnBase = "px-4 py-2 rounded-lg text-sm font-bold border-2 transition-colors";
+  const btnBase   = "px-3 py-2 rounded-lg text-sm font-bold border-2 transition-colors";
   const btnActive = "border-indigo-500 bg-indigo-50 text-indigo-700 dark:bg-indigo-950/40 dark:text-indigo-300";
   const btnInactive = "border-border bg-background";
 
   return (
     <div className="space-y-6">
-      {/* Controls */}
       <Card>
         <CardHeader><CardTitle className="text-sm font-semibold">Configure Your Investment</CardTitle></CardHeader>
         <CardContent>
           <div className="flex flex-wrap gap-6 items-end">
+            {/* Capital presets */}
             <div>
               <p className="text-xs font-bold uppercase tracking-widest text-muted-foreground mb-2">Capital</p>
-              <div className="flex gap-2">
-                {[{ v: 500000, l: "₹5L" }, { v: 1000000, l: "₹10L" }, { v: 2000000, l: "₹20L" }].map(({ v, l }) => (
-                  <button key={v} onClick={() => setCapital(v)} className={`${btnBase} ${capital === v ? btnActive : btnInactive}`}>{l}</button>
+              <div className="flex flex-wrap gap-2">
+                {PRESETS.map(({ v, l }) => (
+                  <button key={v} onClick={() => handlePresetClick(v)}
+                    className={`${btnBase} ${!customActive && capital === v ? btnActive : btnInactive}`}>
+                    {l}
+                  </button>
                 ))}
+                <button
+                  onClick={() => { setShowCustom(s => !s); setTimeout(() => inputRef.current?.focus(), 50); }}
+                  className={`${btnBase} ${customActive ? "border-violet-500 bg-violet-50 text-violet-700 dark:bg-violet-950/40 dark:text-violet-300" : btnInactive}`}>
+                  {customActive ? `Custom: ₹${fmt(capital)}` : "Custom ₹"}
+                </button>
               </div>
+
+              {/* Custom input panel */}
+              {showCustom && (
+                <div className="mt-3 flex items-center gap-2 p-3 border-2 border-violet-300 rounded-xl bg-violet-50 dark:bg-violet-950/20">
+                  <span className="text-sm font-bold text-muted-foreground">₹</span>
+                  <input
+                    ref={inputRef}
+                    type="number"
+                    min={5000}
+                    max={50000000}
+                    placeholder="Enter amount (₹5,000 – ₹50,00,000)"
+                    value={customInput}
+                    onChange={e => setCustomInput(e.target.value)}
+                    onKeyDown={e => e.key === "Enter" && handleCustomApply()}
+                    className="flex-1 border rounded-lg px-3 py-1.5 text-sm outline-none focus:ring-2 focus:ring-violet-400"
+                  />
+                  <button onClick={handleCustomApply}
+                    className="px-4 py-1.5 bg-violet-600 text-white text-sm font-bold rounded-lg hover:bg-violet-700 transition-colors">
+                    Apply
+                  </button>
+                  <button onClick={() => setShowCustom(false)}
+                    className="px-3 py-1.5 border text-sm rounded-lg hover:bg-muted transition-colors">
+                    ✕
+                  </button>
+                </div>
+              )}
+              {showCustom && (
+                <p className="mt-1 text-xs text-muted-foreground">Min: ₹5,000 · Max: ₹50,00,000 · Press Enter or Apply</p>
+              )}
             </div>
+
+            {/* Time horizon */}
             <div>
               <p className="text-xs font-bold uppercase tracking-widest text-muted-foreground mb-2">Time Horizon</p>
               <div className="flex gap-2">
@@ -113,9 +177,12 @@ export default function CapitalSimulator({ trades }) {
                 ))}
               </div>
             </div>
+
+            {/* Reinvest */}
             <div>
               <p className="text-xs font-bold uppercase tracking-widest text-muted-foreground mb-2">Reinvest Profits</p>
-              <button onClick={() => setReinvest(!reinvest)} className={`${btnBase} ${reinvest ? "border-emerald-500 bg-emerald-50 text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-300" : btnInactive}`}>
+              <button onClick={() => setReinvest(!reinvest)}
+                className={`${btnBase} ${reinvest ? "border-emerald-500 bg-emerald-50 text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-300" : btnInactive}`}>
                 {reinvest ? "ON — Compound" : "OFF — Simple"}
               </button>
             </div>
@@ -127,8 +194,8 @@ export default function CapitalSimulator({ trades }) {
       <div className="grid grid-cols-3 gap-4">
         {[
           { label: "Conservative", rows: conservative, rate: rates.conservative, c: "from-amber-500 to-orange-600", sub: "25th percentile month" },
-          { label: "Realistic", rows: realistic, rate: rates.realistic, c: "from-indigo-500 to-violet-600", sub: "Median month (most likely)" },
-          { label: "Optimistic", rows: optimistic, rate: rates.optimistic, c: "from-emerald-500 to-teal-600", sub: "75th percentile month" },
+          { label: "Realistic",    rows: realistic,    rate: rates.realistic,    c: "from-indigo-500 to-violet-600", sub: "Median month (most likely)" },
+          { label: "Optimistic",   rows: optimistic,   rate: rates.optimistic,   c: "from-emerald-500 to-teal-600", sub: "75th percentile month" },
         ].map(({ label, rows, rate, c, sub }) => {
           const last = rows[rows.length - 1];
           return (
