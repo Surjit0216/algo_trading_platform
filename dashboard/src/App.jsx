@@ -15,6 +15,7 @@ import InvestorSnapshot from "./components/InvestorSnapshot";
 import CapitalSimulator from "./components/CapitalSimulator";
 import RiskDashboard from "./components/RiskDashboard";
 import InvestorV2 from "./components/InvestorV2";
+import InvestorV3 from "./components/InvestorV3";
 import {
   Card,
   CardHeader,
@@ -492,6 +493,7 @@ function App() {
               <TabsTrigger value="investor" className="rounded-lg px-4 py-2 text-sm font-semibold">Investor View</TabsTrigger>
               <TabsTrigger value="simulate" className="rounded-lg px-4 py-2 text-sm font-semibold">Capital Simulator</TabsTrigger>
               <TabsTrigger value="investorv2" className="rounded-lg px-4 py-2 text-sm font-semibold">Simulator V2</TabsTrigger>
+              <TabsTrigger value="investorv3" className="rounded-lg px-4 py-2 text-sm font-semibold">Premium Exit V3</TabsTrigger>
               <TabsTrigger value="risk" className="rounded-lg px-4 py-2 text-sm font-semibold">Risk Dashboard</TabsTrigger>
               <TabsTrigger value="trades" className="rounded-lg px-4 py-2 text-sm font-semibold">Trade History</TabsTrigger>
               <TabsTrigger value="charts" className="rounded-lg px-4 py-2 text-sm font-semibold">Charts</TabsTrigger>
@@ -510,6 +512,11 @@ function App() {
             {/* TAB 3 — Simulator V2 */}
             <TabsContent value="investorv2">
               <InvestorV2 trades={trades} />
+            </TabsContent>
+
+            {/* TAB V3 — Premium Exit Analytics */}
+            <TabsContent value="investorv3">
+              <InvestorV3 trades={trades} />
             </TabsContent>
 
             {/* TAB 4 — Risk Dashboard */}
